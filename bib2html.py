@@ -37,10 +37,10 @@ templates = { '@article': \
               </div>
               </div>''', \
               '@book' : \
-              '''<div style="display:flex; padding-top: 0.2em; padding-bottom: 0.2em">
-              <div style="display:inline; padding-left: 10px; padding-right: 10px;">[${number}]
+              '''<div class="reference">
+              <div>[${number}]
               </div>
-              <div style="display:inline">
+              <div>
               ${author}<i>${title}</i>${publisher}${year}.
               </div>
               </div>''', \
@@ -67,7 +67,10 @@ templates = { '@article': \
               <div style="display:inline">
               ${author}<i>${title}</i>${booktitle}${chapter}${publisher}${year}.
               </div>
-              </div>'''}
+              </div>''', \
+              '@misc': \
+              '''<div style="display:flex; padding-top: 0.2em; padding-bottom: 0.2em
+              '''}
 
 def processAuthor(authors):
     ret = ""
@@ -95,7 +98,23 @@ def processAuthor(authors):
 def buildHTML(data):
     header = '''<html>
 <head>
-
+    <style>
+    div.reference {
+    display: flex;
+    padding-top: 0.18em;
+    padding-bottom: 0.18em;
+    }
+    div.reference div:nth-child(1) {
+    display: block;
+    tex-align: center;
+    padding-right: 10px;
+    padding-left: 10px;
+    }
+    div.reference div:nth-child(2) {
+    display: block;
+    text-align: left;
+    }
+    </style>
 </head>
 <body>
 <h1>References</h1>
@@ -108,7 +127,6 @@ def buildHTML(data):
     authors = ""
     body = ""
     for ref in data:
-        print(ref)
         fields = ref['data']
         for key in fields:
             if key == 'author':
@@ -126,7 +144,7 @@ def buildHTML(data):
     return header + '\n' + body + '\n' + footer
     
 
-def buildTree(inf):
+def buildList(inf):
     '''The function takes in a file or input stream
     and parses the file line by line building an
     Tree and returns the data structure.'''
@@ -175,17 +193,17 @@ if __name__ == "__main__":
     args = parser.parse_args()
     if args.inputFile:
         try:
-            inf = open(args.inputFile)
+            inf = open(args.inputFile, 'r', encoding='utf8')
             print("Opened file: " + args.inputFile)
         except:
             print("Failed to open file: " + args.inputFile)
             exit()
 
     if args.outputFile:
-        outf = open(args.outputFile, 'w+')
+        outf = open(args.outputFile, 'w+', encoding='utf8')
     else:
         outf = sys.stdout
         
-    dt = buildTree(inf)
+    dt = buildList(inf)
     output = buildHTML(dt)
     outf.write(output)
