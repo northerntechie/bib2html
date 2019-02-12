@@ -29,7 +29,7 @@ entry dictionary
 """
 
 templates = { '@article': \
-              '''<div style="display:flex">
+              '''<div style="display:flex; padding-top: 0.2em; padding-bottom: 0.2em">
               <div style="display:inline; padding-left: 10px; padding-right: 10px;">[${number}]
               </div>
               <div style="display:inline">
@@ -37,7 +37,7 @@ templates = { '@article': \
               </div>
               </div>''', \
               '@book' : \
-              '''<div style="display:flex">
+              '''<div style="display:flex; padding-top: 0.2em; padding-bottom: 0.2em">
               <div style="display:inline; padding-left: 10px; padding-right: 10px;">[${number}]
               </div>
               <div style="display:inline">
@@ -45,20 +45,30 @@ templates = { '@article': \
               </div>
               </div>''', \
               '@online' : \
-              '''<div style="display:flex">
+              '''<div style="display:flex; padding-top: 0.2em; padding-bottom: 0.2em">
               <div style="display:inline; padding-left: 10px; padding-right: 10px;">[${number}]
               </div>
               <div style="display:inline">
               ${author}<i>${title}</i>${publisher}${year}. [Online].
               </div>
-              </div>''' }
+              </div>''', \
+              '@inproceedings': \
+              '''<div style="display:flex; padding-top: 0.2em; padding-bottom: 0.2em">
+              <div style="display:inline; padding-left: 10px; padding-right: 10px;">[${number}]
+              </div>
+              <div style="display:inline">
+              ${author}<i>${title}</i>${publisher}${volume}${pages}${month}.
+              </div>
+              </div>''', \
+              '@incollection': \
+              '''<div style="display:flex; padding-top: 0.2em; padding-bottom: 0.2em">
+              <div style="display:inline; padding-left: 10px; padding-right: 10px;">[${number}]
+              </div>
+              <div style="display:inline">
+              ${author}<i>${title}</i>${booktitle}${chapter}${publisher}${year}.
+              </div>
+              </div>'''}
 
-def estrip(strng, char):
-    if strng[:len(strng)-1] == char and len(strng) > 1:
-        return strng[0:len(strng)-2]
-    else:
-        return strng
-    
 def processAuthor(authors):
     ret = ""
     prepend = ""
@@ -68,12 +78,15 @@ def processAuthor(authors):
         author = value
         names = author.strip().split()
         modName = ""
-        if names[0].lower() == 'others':
-            modName = 'et al'
-        else:
-            for name in names[0:len(names)-1]:
-                modName = name[0] + '. '
-                modName = modName + names[len(names)-1]
+        try:
+            if names != None and names[0].lower() == 'others':
+                modName = 'et al'
+            else:
+                for name in names[0:len(names)-1]:
+                    modName = name[0] + '. '
+                    modName = modName + names[len(names)-1]
+        except:
+            pass
         ret = ret + prepend + modName.strip()
         prepend = ', '
     ret = ret.strip()

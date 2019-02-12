@@ -11,8 +11,15 @@ usage: bib2html.py [-h] -i INPUTFILE [-o OUTPUTFILE]
 BibTex to HTML converter
 
 optional arguments:
-  -h, --help            show this help message and exit
-  -i INPUTFILE, --input INPUTFILE
-                        Input BibText file. If no option, uses stdin.
-  -o OUTPUTFILE, --output OUTPUTFILE
-                        Output HTML file. If no option, uses stdout.
+
+-h, --help
+
+show this help message and exit
+
+-i INPUTFILE, --input INPUTFILE
+
+Input BibText file. If no option, uses stdin.
+
+-o OUTPUTFILE, --output OUTPUTFILE
+
+Output HTML file. If no option, uses stdout.
