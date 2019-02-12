@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
-
 # Python script to convert BibTex entries to HTML code
 # snippets.
+#
+# See LICENSE file for license and legal details
+
 import sys
 import argparse
 import fileinput
@@ -111,10 +113,10 @@ def buildHTML(data):
     return header + '\n' + body + '\n' + footer
     
 
-def buildAST(inf):
+def buildTree(inf):
     '''The function takes in a file or input stream
     and parses the file line by line building an
-    AST and returns the data structure.'''
+    Tree and returns the data structure.'''
   
     root = deque([])
 
@@ -171,18 +173,6 @@ if __name__ == "__main__":
     else:
         outf = sys.stdout
         
-    dt = buildAST(inf)
-    print("dt= " + str(dt))
-    testData=[{'id':'test01', \
-               'type':'@Book', \
-               'data':{ 'author':'Todd Saharchuk and Donald Seuss', \
-                       'title':'I am I said so Sam: A Short Story', \
-                        'publisher':'Dreaming Publishing, Inc.', 'year':'2019'}},
-              {'id':'test02', \
-               'type':'@Book', \
-               'data':{ 'author':'Howard Duck and others', \
-                        'title':'How to survive as a B character in Marvel.', \
-                        'publisher':'Marvel Comics, Inc.', \
-                        'year':'2000'}}]
+    dt = buildTree(inf)
     output = buildHTML(dt)
     outf.write(output)
