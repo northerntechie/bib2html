@@ -7,6 +7,7 @@
 import sys
 import argparse
 import fileinput
+import copy
 from collections import deque
 from string import Template
 
@@ -27,12 +28,14 @@ entry dictionary
 }
 
 """
+baseFields = ['author','title','url','available','accessed','year','publisher','pages','booktitle']
 
+              
 templates = { '@article': \
-              '''<div style="display:flex; padding-top: 0.2em; padding-bottom: 0.2em">
-              <div style="display:inline; padding-left: 10px; padding-right: 10px;">[${number}]
+              '''<div class="reference">
+              <div>[${number}]
               </div>
-              <div style="display:inline">
+              <div>
               ${author}<i>${title}</i>${journal}.
               </div>
               </div>''', \
@@ -45,31 +48,35 @@ templates = { '@article': \
               </div>
               </div>''', \
               '@online' : \
-              '''<div style="display:flex; padding-top: 0.2em; padding-bottom: 0.2em">
-              <div style="display:inline; padding-left: 10px; padding-right: 10px;">[${number}]
+              '''<div class="reference">
+              <div>[${number}]
               </div>
-              <div style="display:inline">
+              <div>
               ${author}<i>${title}</i>${publisher}${year}. [Online].
               </div>
               </div>''', \
               '@inproceedings': \
-              '''<div style="display:flex; padding-top: 0.2em; padding-bottom: 0.2em">
-              <div style="display:inline; padding-left: 10px; padding-right: 10px;">[${number}]
+              '''<div class="reference">
+              <div>[${number}]
               </div>
-              <div style="display:inline">
+              <div>
               ${author}<i>${title}</i>${publisher}${volume}${pages}${month}.
               </div>
               </div>''', \
               '@incollection': \
-              '''<div style="display:flex; padding-top: 0.2em; padding-bottom: 0.2em">
-              <div style="display:inline; padding-left: 10px; padding-right: 10px;">[${number}]
+              '''<div class="reference">
+              <div>[${number}]
               </div>
-              <div style="display:inline">
+              <div>
               ${author}<i>${title}</i>${booktitle}${chapter}${publisher}${year}.
               </div>
               </div>''', \
               '@misc': \
-              '''<div style="display:flex; padding-top: 0.2em; padding-bottom: 0.2em
+              '''<div class="reference">
+              <div>[${number}]
+              </div>
+              <div>
+              ${author}<i>${title}</it>${}
               '''}
 
 def processAuthor(authors):
@@ -127,17 +134,17 @@ def buildHTML(data):
     authors = ""
     body = ""
     for ref in data:
-        fields = ref['data']
-        for key in fields:
+        for key in ref['data']:
             if key == 'author':
-                 fields[key] = processAuthor(fields[key])
+                 ref['data'][key] = processAuthor(ref['data'][key])
             else:
-                if  fields[key] != "" or fields[key] != None:
-                    fields[key] = ', ' + fields[key]
+                if  ref['data'][key] != "" or \
+                    ref['data'][key] != None:
+                    ref['data'][key] = ', ' + ref['data'][key]
                     
         s = templates[ref['type'].lower()]
         if s != None:
-            result = Template(s).safe_substitute(fields, number=str(id))
+            result = Template(s).safe_substitute(ref['data'], number=str(id))
             body += result
             id += 1
 
@@ -146,8 +153,8 @@ def buildHTML(data):
 
 def buildList(inf):
     '''The function takes in a file or input stream
-    and parses the file line by line building an
-    Tree and returns the data structure.'''
+    and parses the file line by line building a
+    List and returns the data structure.'''
   
     root = deque([])
 
@@ -175,7 +182,19 @@ def buildList(inf):
                     value = value.strip('}')
                     if value != '' or value != None:
                         data[key] = value
-        
+
+    # This fix is temporary
+    # TODO(Todd): Find a better way of handling
+    # null parsed fields for template strings
+    for entry in root:
+        minimalFields = copy.deepcopy(baseFields)
+        for key in entry['data']:
+            if key in minimalFields:
+                minimalFields.remove(key)
+        for key in minimalFields:
+            entry['data'][key] = ''
+            
+    
     return root
                 
 
