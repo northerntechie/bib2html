@@ -52,7 +52,7 @@ templates = { '@article': \
               <div>[${number}]
               </div>
               <div>
-              ${author}<i>${title}</i>${publisher}${year}. [Online].
+              ${author}<i>${title}</i>${publisher}${year}. [Online]. ${accessed}
               </div>
               </div>''', \
               '@inproceedings': \
@@ -82,24 +82,29 @@ templates = { '@article': \
 def processAuthor(authors):
     ret = ""
     prepend = ""
-    
-    lst = authors.split('and')
-    for value in lst:
-        author = value
-        names = author.strip().split()
-        modName = ""
-        try:
-            if names != None and names[0].lower() == 'others':
-                modName = 'et al'
-            else:
-                for name in names[0:len(names)-1]:
-                    modName = name[0] + '. '
-                    modName = modName + names[len(names)-1]
-        except:
-            pass
-        ret = ret + prepend + modName.strip()
-        prepend = ', '
-    ret = ret.strip()
+
+    # return in single author name found
+    # else, process list
+    if ' ' not in authors:
+        return authors
+    else:
+        lst = authors.split('and')
+        for value in lst:
+            author = value
+            names = author.strip().split()
+            modName = ""
+            try:
+                if names != None and names[0].lower() == 'others':
+                    modName = 'et al'
+                else:
+                    for name in names[0:len(names)-1]:
+                        modName = name[0] + '. '
+                        modName = modName + names[len(names)-1]
+            except:
+                pass
+            ret = ret + prepend + modName.strip()
+            prepend = ', '
+        ret = ret.strip()
     return ret
 
 def buildHTML(data):
@@ -136,9 +141,14 @@ def buildHTML(data):
     for ref in data:
         for key in ref['data']:
             if key == 'author':
-                 ref['data'][key] = processAuthor(ref['data'][key])
+                ref['data'][key] = processAuthor(ref['data'][key])
+            elif key == 'accessed' and \
+                 ref['data'][key] != '':
+                ref['data'][key] = "[Accessed: " + \
+                                   ref['data'][key] + \
+                                   "]"
             else:
-                if  ref['data'][key] != "" or \
+                if  ref['data'][key] != "" and \
                     ref['data'][key] != None:
                     ref['data'][key] = ', ' + ref['data'][key]
                     
