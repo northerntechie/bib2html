@@ -79,6 +79,22 @@ templates = { '@article': \
               ${author}<i>${title}</it>${}
               '''}
 
+def swapNames(lst):
+    for fullname in lst:
+        names = fullname.split(',')
+        for name in names:
+            name.strip(' ')
+        if len(names) > 1:
+            temp = names[0]
+            names = names[1:len(names)-1]
+            names.append(temp)
+            out = ""
+            for name in names:
+                out += name + ' '
+            return out
+        else:
+            return names
+    
 def processAuthor(authors):
     ret = ""
     prepend = ""
@@ -89,6 +105,8 @@ def processAuthor(authors):
         return authors
     else:
         lst = authors.split('and')
+        if ',' in lst:
+            swapNames(lst)
         for value in lst:
             author = value
             names = author.strip().split()
@@ -172,11 +190,12 @@ def buildList(inf):
     for line in inf:
         if line[0] == '@': # First line
             if '{' in line:
-                type = line[:line.find('{')].strip()
+                type = line[:line.find('{')].strip().lower()
                 id = line[line.find('{')+1:line.find(',')].strip()
-                print("type= " + type + ", id= " + id)
         else:
-            if line == '}\n':
+            # end of record dependent on single '}' on line
+            # TODO(Todd): fix
+            if line.strip() == '}':
                 entry = {'type':type,'id':id,'data':data}
                 root.append(entry)
                 data = {}
@@ -204,7 +223,6 @@ def buildList(inf):
         for key in minimalFields:
             entry['data'][key] = ''
             
-    
     return root
                 
 
