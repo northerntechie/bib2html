@@ -200,17 +200,12 @@ def buildList(inf):
                 root.append(entry)
                 data = {}
             else:
-                if line.split() != []:
-                    key = line.split()[0].strip(' ')
-                    value = line[line.find('=')+1:]
-                    value = value.replace('\t','')
-                    value = value.replace('\n','')
-                    value = value.strip(' ')
-                    value = value.strip('{')
-                    value = value.strip(',')
-                    value = value.strip('}')
-                    if value != '' or value != None:
-                        data[key] = value
+                kv = line.split('=')
+                if len(kv) > 1:
+                    kv[0] = kv[0].strip('\t\n{,} ')
+                    kv[1] = kv[1].strip('\t\n{,} ')
+                    if kv[0] != '' and kv[1] != None:
+                        data[kv[0]] = kv[1]
 
     # This fix is temporary
     # TODO(Todd): Find a better way of handling
