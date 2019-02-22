@@ -28,7 +28,7 @@ entry dictionary
 }
 
 """
-baseFields = ['author','title','url','available','accessed','year','publisher','pages','booktitle']
+baseFields = ['author','title','url','available','accessed','year','publisher','pages','booktitle','volume']
 
               
 templates = { '@article': \
@@ -52,7 +52,7 @@ templates = { '@article': \
               <div>[${number}]
               </div>
               <div>
-              ${author}<i>${title}</i>${publisher}${year}. [Online]. ${accessed}
+              ${author}<i>${title}</i>${publisher}${year}. [Online]. ${url}${accessed}
               </div>
               </div>''', \
               '@inproceedings': \
@@ -76,7 +76,18 @@ templates = { '@article': \
               <div>[${number}]
               </div>
               <div>
-              ${author}<i>${title}</it>${}
+              ${author}<i>${title}</it>
+              </div>
+              </div>
+              ''',
+              '@journal': \
+              '''<div class="reference">
+              <div>[${number}]
+              </div>
+              <div>
+              ${author}<i>${title}</i>${booktitle}${volume}
+              </div>
+              </div>
               '''}
 
 def swapNames(lst):
@@ -161,10 +172,18 @@ def buildHTML(data):
             if key == 'author':
                 ref['data'][key] = processAuthor(ref['data'][key])
             elif key == 'accessed' and \
-                 ref['data'][key] != '':
+              ref['data'][key] != '':
                 ref['data'][key] = "[Accessed: " + \
-                                   ref['data'][key] + \
-                                   "]"
+                  ref['data'][key] + \
+                  "]"
+            elif key == 'url':
+              if ref['data'][key] != '':
+                print("ref['data'][key]= " + \
+                        ref['data'][key])
+                if 'url' in ref['data'][key]:
+                    ref['data'][key] = ref['data'][key][3:]
+                    ref['data'][key].strip('{}')
+                ref['data'][key] = 'Available: <span style="font-family: "Lucida Console", Monaco, monospace">' + ref['data'][key] + '</span> '
             else:
                 if  ref['data'][key] != "" and \
                     ref['data'][key] != None:
