@@ -194,7 +194,7 @@ def buildHTML(data):
             result = Template(s).safe_substitute(ref['data'], number=str(id))
             body += result
             id += 1
-
+            
     return header + '\n' + body + '\n' + footer
     
 
