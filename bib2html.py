@@ -52,6 +52,7 @@ templates = { '@article': \
               <div>[${number}]
               </div>
               <div>
+
               ${author}<i>${title}</i>${publisher}${year}. [Online]. ${url}${accessed}
               </div>
               </div>''', \
@@ -86,6 +87,15 @@ templates = { '@article': \
               </div>
               <div>
               ${author}<i>${title}</i>${booktitle}${volume}
+              </div>
+              </div>
+              ''',
+              '@techreport': \
+              '''<div class="reference">
+              <div>[${number}]
+              </div>
+              <div>
+              ${author}<i>${title}</i>${publisher}${year}
               </div>
               </div>
               '''}
@@ -183,7 +193,8 @@ def buildHTML(data):
                 if 'url' in ref['data'][key]:
                     ref['data'][key] = ref['data'][key][3:]
                     ref['data'][key].strip('{}')
-                ref['data'][key] = 'Available: <span style="font-family: "Lucida Console", Monaco, monospace">' + ref['data'][key] + '</span> '
+                ref['data'][key] = 'Available: <a href="' + ref['data'][key] + '">' + \
+                                   ref['data'][key] + '</a> '
             else:
                 if  ref['data'][key] != "" and \
                     ref['data'][key] != None:
@@ -194,6 +205,7 @@ def buildHTML(data):
             result = Template(s).safe_substitute(ref['data'], number=str(id))
             body += result
             id += 1
+
             
     return header + '\n' + body + '\n' + footer
     
