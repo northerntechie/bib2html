@@ -8,6 +8,7 @@ import sys
 import argparse
 import fileinput
 import copy
+import re
 from collections import deque
 from string import Template
 
@@ -131,6 +132,8 @@ def processAuthor(authors):
         for value in lst:
             author = value
             names = author.strip().split()
+            for name in names:
+                name = name.strip('{').strip('}')
             modName = ""
             try:
                 if names != None and names[0].lower() == 'others':
@@ -146,7 +149,7 @@ def processAuthor(authors):
         ret = ret.strip()
     return ret
 
-def buildHTML(data):
+def buildReferenceHTML(data):
     header = '''<html>
 <head>
     <style>
@@ -186,10 +189,13 @@ def buildHTML(data):
                 ref['data'][key] = "[Accessed: " + \
                   ref['data'][key] + \
                   "]"
+            elif key == 'title' and \
+              ref['data'][key] != '':
+                ref['data'][key] = ref['data'][key].replace('{','').replace('}','')
+                if ref['data']['author'] != '':
+                    ref['data'][key] = ', ' + ref['data'][key]
             elif key == 'url':
               if ref['data'][key] != '':
-                print("ref['data'][key]= " + \
-                        ref['data'][key])
                 if 'url' in ref['data'][key]:
                     ref['data'][key] = ref['data'][key][3:]
                     ref['data'][key].strip('{}')
@@ -205,11 +211,39 @@ def buildHTML(data):
             result = Template(s).safe_substitute(ref['data'], number=str(id))
             body += result
             id += 1
-
             
     return header + '\n' + body + '\n' + footer
     
+def buildHTML(body, data):
+    doc = ""
 
+    matcher = re.compile(r'(\$\{[a-zA-Z0-9:\.\-]*})')
+    num = 0
+    for line in body:
+        match = matcher.search(line)
+        while match:
+            citation = match.groups()[0]
+            #            print('citation= ', citation, end='')
+            #            print(', match.groups()= ', match.groups())            
+            key = citation.strip('$').strip('{}')
+            (entry, id) = getEntry(key, data)
+            if entry:
+                line.replace(citation, '[' + str(id) + '] ')
+            match = matcher.search(line)
+            break
+        num = num+1
+        doc = doc + line + '\n'
+    return doc
+
+def getEntry(key, data):
+    id = 1
+    for entry in data:
+        idStr = entry['id']
+        if idStr.lower() == key.lower():
+            return (entry, id)
+        id = id + 1 
+    return (None,None)
+    
 def buildList(inf):
     '''The function takes in a file or input stream
     and parses the file line by line building a
@@ -262,6 +296,13 @@ if __name__ == "__main__":
     parser.add_argument('-o', '--output', \
                         dest='outputFile', \
                         help='Output HTML file. If no option, uses stdout.')
+
+    parser.add_argument('-ih', '--inputhtml', \
+                        dest='inputHtml', \
+                        help='Input HTML file.  If present, will modify ${<tag>} citations in html document.')
+    parser.add_argument('-oh', '--outputhtml', \
+                        dest='outputHtml', \
+                        help='Output HTML file.  Must be present if option -ih, --inputHtml option present.')
     
     args = parser.parse_args()
     if args.inputFile:
@@ -276,7 +317,33 @@ if __name__ == "__main__":
         outf = open(args.outputFile, 'w+', encoding='utf8')
     else:
         outf = sys.stdout
-        
+
+    if args.inputHtml and not args.outputHtml or \
+       not args.inputHtml and args.outputHtml:
+        print('-ih and -oh are required together to process HTML input file.')
+        exit()
+
     dt = buildList(inf)
-    output = buildHTML(dt)
+    output = buildReferenceHTML(dt)
+    
     outf.write(output)
+
+    if args.inputHtml and args.outputHtml:
+        try:
+            inhf = open(args.inputHtml, 'r', encoding='utf8')
+            print('Opened input HTML file: ', args.inputHtml)
+        except:
+            print('Failed to open HTML input file: ', args.inputHtml)
+            exit()
+        outputHtml = buildHTML(inhf, dt)
+
+#        print(outputHtml)
+        
+        try:
+            outhf = open(args.outputHtml, 'w+', encoding='utf-8')
+            print('Opened output HTML file for writing: ', args.outputHtml)
+        except:
+            print('Failed to write HTML outut file: ', args.outputHtml)
+            
+        outhf.write(outputHtml)
+
