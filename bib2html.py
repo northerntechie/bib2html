@@ -33,7 +33,7 @@ baseFields = ['author','title','url','available','accessed','year','publisher','
 
               
 templates = { '@article': \
-              '''<div class="reference">
+              '''<div class="reference" id="ref${number}">
               <div>[${number}]
               </div>
               <div>
@@ -41,7 +41,7 @@ templates = { '@article': \
               </div>
               </div>''', \
               '@book' : \
-              '''<div class="reference">
+              '''<div class="reference" id="ref${number}">
               <div>[${number}]
               </div>
               <div>
@@ -49,16 +49,15 @@ templates = { '@article': \
               </div>
               </div>''', \
               '@online' : \
-              '''<div class="reference">
+              '''<div class="reference" id="ref${number}">
               <div>[${number}]
               </div>
               <div>
-
               ${author}<i>${title}</i>${publisher}${year}. [Online]. ${url}${accessed}
               </div>
               </div>''', \
               '@inproceedings': \
-              '''<div class="reference">
+              '''<div class="reference" id="ref${number}">
               <div>[${number}]
               </div>
               <div>
@@ -66,7 +65,7 @@ templates = { '@article': \
               </div>
               </div>''', \
               '@incollection': \
-              '''<div class="reference">
+              '''<div class="reference" id="ref${number}">
               <div>[${number}]
               </div>
               <div>
@@ -74,7 +73,7 @@ templates = { '@article': \
               </div>
               </div>''', \
               '@misc': \
-              '''<div class="reference">
+              '''<div class="reference" id="ref${number}">
               <div>[${number}]
               </div>
               <div>
@@ -83,20 +82,29 @@ templates = { '@article': \
               </div>
               ''',
               '@journal': \
-              '''<div class="reference">
+              '''<div class="reference" id="ref${number}">
               <div>[${number}]
               </div>
               <div>
-              ${author}<i>${title}</i>${booktitle}${volume}
+              ${author}<i>${title}</i>${booktitle}${volume}${journal}${publisher}${issn}${url}
               </div>
               </div>
               ''',
               '@techreport': \
-              '''<div class="reference">
+              '''<div class="reference" id="ref${number}">
               <div>[${number}]
               </div>
               <div>
               ${author}<i>${title}</i>${publisher}${year}
+              </div>
+              </div>
+              ''',
+              '@inproceedings': \
+              '''<div class="reference" id="ref${number}">
+              <div>[${number}]
+              </div>
+              <div>
+              ${author}<i>${title}</i>${volume}${number}${pages}${year}
               </div>
               </div>
               '''}
@@ -126,6 +134,10 @@ def processAuthor(authors):
     if ' ' not in authors:
         return authors
     else:
+        print('authors= ', authors)
+        inner = authors.strip('{').strip('}')
+        if '{' in inner:
+            return inner.strip('{').strip('}')
         lst = authors.split('and')
         if ',' in lst:
             swapNames(lst)
@@ -149,9 +161,9 @@ def processAuthor(authors):
         ret = ret.strip()
     return ret
 
-def buildReferenceHTML(data):
+def buildReferenceHTML(body):
     header = '''<html>
-<head>
+    <head>
     <style>
     div.reference {
     display: flex;
@@ -169,13 +181,16 @@ def buildReferenceHTML(data):
     text-align: left;
     }
     </style>
-</head>
-<body>
-<h1>References</h1>
-'''
+    </head>
+    <body>
+    <h1>References</h1>
+    '''
     footer = '''</body>
-</html>
-'''
+    </html>
+    '''
+    return header + '\n' + body + '\n' + footer
+
+def buildReferenceBody(data):
 
     id = 1
     authors = ""
@@ -201,37 +216,72 @@ def buildReferenceHTML(data):
                     ref['data'][key].strip('{}')
                 ref['data'][key] = 'Available: <a href="' + ref['data'][key] + '">' + \
                                    ref['data'][key] + '</a> '
+            elif key == 'issn':
+                if ref['data'][key] != '':
+                    ref['data'][key] = ref['data'][key].strip('{}')
+                    ref['data'][key] = 'ISSN: ' + ref['data'][key] + ', '
             else:
                 if  ref['data'][key] != "" and \
                     ref['data'][key] != None:
-                    ref['data'][key] = ', ' + ref['data'][key]
+                    ref['data'][key] = ref['data'][key] + ', '
                     
         s = templates[ref['type'].lower()]
         if s != None:
             result = Template(s).safe_substitute(ref['data'], number=str(id))
+            result = result.rstrip(', ')
             body += result
             id += 1
             
-    return header + '\n' + body + '\n' + footer
+    return body
+
+def insertReference(html, body):
+    doc = '''<style>
+    div.reference {
+    display: flex;
+    padding-top: 0.18em;
+    padding-bottom: 0.18em;
+    }
+    div.reference div:nth-child(1) {
+    display: block;
+    tex-align: center;
+    padding-right: 10px;
+    padding-left: 10px;
+    }
+    div.reference div:nth-child(2) {
+    display: block;
+    text-align: left;
+    }
+    </style>'''
+
+
+    matcher = re.compile(r'\$\{REFERENCES\}')
+    for line in html.split('\n'):
+        match = matcher.search(line)
+        if match:
+            print('Found a ${REFERENCE} tag in input HTML.')
+            line = body
+        doc = doc + line + '\n'
+
+    return doc
     
 def buildHTML(body, data):
     doc = ""
 
     matcher = re.compile(r'(\$\{[a-zA-Z0-9:\.\-]*})')
-    num = 0
     for line in body:
         match = matcher.search(line)
         while match:
             citation = match.groups()[0]
-            #            print('citation= ', citation, end='')
-            #            print(', match.groups()= ', match.groups())            
             key = citation.strip('$').strip('{}')
             (entry, id) = getEntry(key, data)
             if entry:
-                line.replace(citation, '[' + str(id) + '] ')
+                start = line.find(citation)
+                if start != -1:
+                    end = start + len(citation)
+                    line = line[0:start] + '<a href="#ref' + str(id) \
+                           + '">[' + str(id) +']</a>' + line[end:len(line)-1]
             match = matcher.search(line)
             break
-        num = num+1
         doc = doc + line + '\n'
     return doc
 
@@ -268,7 +318,8 @@ def buildList(inf):
                 kv = line.split('=')
                 if len(kv) > 1:
                     kv[0] = kv[0].strip('\t\n{,} ')
-                    kv[1] = kv[1].strip('\t\n{,} ')
+                    kv[1] = kv[1].strip('\t\n, ')
+                    kv[1] = kv[1][1:len(kv[1])-1]
                     if kv[0] != '' and kv[1] != None:
                         data[kv[0]] = kv[1]
 
@@ -324,7 +375,8 @@ if __name__ == "__main__":
         exit()
 
     dt = buildList(inf)
-    output = buildReferenceHTML(dt)
+    body = buildReferenceBody(dt)
+    output = buildReferenceHTML(body)
     
     outf.write(output)
 
@@ -336,9 +388,8 @@ if __name__ == "__main__":
             print('Failed to open HTML input file: ', args.inputHtml)
             exit()
         outputHtml = buildHTML(inhf, dt)
-
-#        print(outputHtml)
-        
+        outputHtml = insertReference(outputHtml, body)
+                
         try:
             outhf = open(args.outputHtml, 'w+', encoding='utf-8')
             print('Opened output HTML file for writing: ', args.outputHtml)
